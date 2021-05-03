@@ -5,59 +5,90 @@
 	<title>Side Navigation Bar</title>
 	<link rel="stylesheet" href="css/styles.css">
 	<script src="https://kit.fontawesome.com/b99e675b6e.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pusher/7.0.3/pusher.min.js"></script>
+  <script  src="/js/socket.js"></script>
+  <script  src="/js/chat.js"></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
+
+<div id="hidden_form_container" style="display:none;"></div>
+
+        
 <div class="wrapper">
     <div class="sidebar">
-        <h2><%=username %></h2>
+        <h2><%=username%></h2>
         <ul>
             <% if(groups.length > 0) { %>
 
             
             <% groups.forEach((group) => {%>
-                <li><%= group %></li>
+                <li><%= group %>
+                <form action="/test" method="POST">
+                    <input type="submit" name="group_id[]" value="<%= group %>" />
+                </form>
+                </li>
+                            <!-- <li onclick='myFunction()'><%= group %></li>
+                
+                <script>
+                    var group_id = <%= group %>
+                    function myFunction() {
+                      form = document.createElement('form')
+                      //grab group id
+                    
+                      var route = "/chat" + group_id
+                      console.log(group_id)
+                    //   form.action = route
+                    //   form.method='GET'
+                    // //   newInput1 = document.createElement('input');
+                    // //   newInput1.type = 'hidden';
+                    // //   newInput1.name = 'input_1';
+                    // //   form.appendChild(newInput1)
+                      document.getElementById('hidden_form_container').appendChild(form);
+                      form.submit();
+                    }
+                </script> -->
             <% }) %>
             <% } else { %>
                 <p class='empty-group'>No Groups</p>
+                
             <% } %>
 
-            <!-- <li><a href="#"><i class="fas fa-home"></i>Home</a></li>
-            <li><a href="#"><i class="fas fa-user"></i>Profile</a></li>
-            <li><a href="#"><i class="fas fa-address-card"></i>About</a></li>
-            <li><a href="#"><i class="fas fa-project-diagram"></i>portfolio</a></li>
-            <li><a href="#"><i class="fas fa-blog"></i>Blogs</a></li>
-            <li><a href="#"><i class="fas fa-address-book"></i>Contact</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>Map</a></li>
-            <li><a href="#"><i class="fas fa-map-pin"></i>as</a></li> -->
-
+           
         </ul> 
 
     </div>
     <div class="main_content">
-        <div class="header">Welcome!! Have a nice day.</div>  
+        <div class="header">
+            <form action="/join-group" method="POST">
+              <label for="groupname">Join Group:</label>
+              <input type="text" id="groupname" name="groupname" required>
+              <button>Submit</button>
+            </form>
+          </div> 
+          <div class="header">
+            <form action="/create-group" method="POST">
+              <label for="groupname">Create Group:</label>
+              <input type="text" id="groupname" name="groupname" required>
+              <button>Submit</button>
+            </form>
+          </div> 
+ 
         <div class="info">
-          <div>Lorem ipsum dolor sit, amet consectetur adipisicing elit. A sed nobis ut exercitationem atque accusamus sit natus officiis totam blanditiis at eum nemo, nulla et quae eius culpa eveniet voluptatibus repellat illum tenetur, facilis porro. Quae fuga odio perferendis itaque alias sint, beatae non maiores magnam ad, veniam tenetur atque ea exercitationem earum eveniet totam ipsam magni tempora aliquid ullam possimus? Tempora nobis facere porro, praesentium magnam provident accusamus temporibus! Repellendus harum veritatis itaque molestias repudiandae ea corporis maiores non obcaecati libero, unde ipsum consequuntur aut consectetur culpa magni omnis vero odio suscipit vitae dolor quod dignissimos perferendis eos? Consequuntur!</div>
-          <div>Lorem ipsum dolor sit, amet consectetur adipisicing elit. A sed nobis ut exercitationem atque accusamus sit natus officiis totam blanditiis at eum nemo, nulla et quae eius culpa eveniet voluptatibus repellat illum tenetur, facilis porro. Quae fuga odio perferendis itaque alias sint, beatae non maiores magnam ad, veniam tenetur atque ea exercitationem earum eveniet totam ipsam magni tempora aliquid ullam possimus? Tempora nobis facere porro, praesentium magnam provident accusamus temporibus! Repellendus harum veritatis itaque molestias repudiandae ea corporis maiores non obcaecati libero, unde ipsum consequuntur aut consectetur culpa magni omnis vero odio suscipit vitae dolor quod dignissimos perferendis eos? Consequuntur!</div>
-          <div>Lorem ipsum dolor sit, amet consectetur adipisicing elit. A sed nobis ut exercitationem atque accusamus sit natus officiis totam blanditiis at eum nemo, nulla et quae eius culpa eveniet voluptatibus repellat illum tenetur, facilis porro. Quae fuga odio perferendis itaque alias sint, beatae non maiores magnam ad, veniam tenetur atque ea exercitationem earum eveniet totam ipsam magni tempora aliquid ullam possimus? Tempora nobis facere porro, praesentium magnam provident accusamus temporibus! Repellendus harum veritatis itaque molestias repudiandae ea corporis maiores non obcaecati libero, unde ipsum consequuntur aut consectetur culpa magni omnis vero odio suscipit vitae dolor quod dignissimos perferendis eos? Consequuntur!</div>
-      </div>
+
+          <ul id="messages">
+
+          </ul>
+          
+          
+         
+          <form action="/test" method="GET">
+            <!-- <label for="message">Enter Message:</label>
+            <input type="text" id="message" name="message" required> -->
+            <button>Submit</button>
+          </form>
+        </div>
     </div>
 </div>
 

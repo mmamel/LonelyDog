@@ -11,7 +11,8 @@ const userSchema = new Schema({
         type: String,
         required: true,
     },
-    followed_groups: [String]
+    groups_id: [String],
+    groups_name: [String]
 }, {timestamps: true, collection: 'users'});
 
 const User = mongoose.model('userSchema', userSchema);

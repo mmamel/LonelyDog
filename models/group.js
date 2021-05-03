@@ -6,7 +6,7 @@ const groupSchema = new Schema({
         type: String,
         required: true
     },
-    list: [String]
+    member_id: [String]
 }, {timestamps: true});
 
 const Group = mongoose.model('Group', groupSchema);

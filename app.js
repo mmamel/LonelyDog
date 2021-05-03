@@ -5,17 +5,22 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 var cookieParser = require('cookie-parser');
+const Pusher = require("pusher");
+const http = require("http").createServer(express)
+const io = require('socket.io')(http)
+const cors = require("cors")
 
 const JWT_SECRET = 'ASD893ADF903#@%@ASDFJdlsjel'
 const Group = require('./models/group.js');
 const User = require('./models/user.js');
-// const bodyParser = require('body-parser');
+const Message = require('./models/message.js')
+const bodyParser = require('body-parser');
 //admin passwrod
 //E1uEV9a0VXHRDDZo
 
 //express app
 const app = express();
-// app.use(bodyParser.json());
+app.use(bodyParser.json());
 //register view engine
 app.set('view engine', 'ejs');
 app.set('views', 'public/views');
@@ -30,10 +35,19 @@ mongoose.connect(dbURI, {useNewUrlParser:true, useUnifiedTopology:true})
 app.use(express.static(__dirname + '/public'));
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
+app.use(cors());
 mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 
+const pusher = new Pusher({
+    appId: "1197719",
+    key: "669a5ab13f536909a0ab",
+    secret: "9bec39289ddb44136391",
+    cluster: "us3",
+    useTLS: true
+  });
+  
 // app.use((req, res, next) => {
 //     console.log('new request made');
 //     console.log('host: ', req.hostname);
@@ -42,6 +56,17 @@ mongoose.set('useCreateIndex', true);
 //     next();
 // });
 
+io.on("connection", (socket) => {
+    socket.on("group_id", (gameId) => {});
+    socket.on("message", (message)=>{});
+})
+http.listen(3100, async() =>{
+    try{
+        console.log("Listening on port :%s", http.address().port);
+    } catch(e) {
+        console.error(e);
+    }
+})
 app.get('/add-group', (req, res) => {
     const group = new Group({
         name: "magee wanka",
@@ -70,39 +95,85 @@ app.get('/clear', (req, res)=>{
     res.clearCookie('token')
     res.send("cleared")
 })
-app.get('/', (req, res) => {
-        if(req.cookies.token == null){
-            res.redirect('/login')
+// app.get('/', async (req, res) => {
+//         if(req.cookies.token == null){
+//             res.redirect('/login')
+//         }
+//         else{
+//             try{
+//                 const user = jwt.verify(req.cookies.token, JWT_SECRET)
+//                 console.log(user)
+//                 User.findById(user.id)
+//                 .then((result) => {
+                    
+//                     res.render('index', {username: result.username, groups: result.groups_name})
+//                 })
+//                 .catch((err) => {
+//                     console.log(err)
+//                 })
+//             }
+//             catch(error){
+//                 res.json({status: error, error: "bad"})
+//             }
+//         }
+
+// })
+
+//dont know how slow this is using so many await functions
+app.get('/', async (req, res) => {
+    if(req.cookies.token == null){
+        res.redirect('/login')
+    }
+    else{
+        try{
+            const user_jwt = jwt.verify(req.cookies.token, JWT_SECRET)
+            var group_names = []
+            const user = await User.findById(user_jwt.id).lean()
+                for (var i=0; i<user.groups_id.length;i++){
+                    console.log(user.groups_id[i])
+                var group = await Group.findById(user.groups_id[i]).lean()
+                group_names.push(group.name)
+                }
+             
+            console.log(group_names)
+            // res.setHeader("Content-Type", "application/json");
+            // res.statusCode  =  200;
+            res.render('index', {username: user.username, groups: group_names})
+           
         }
-        else{
-            try{
-                const user = jwt.verify(req.cookies.token, JWT_SECRET)
-                User.findById(user.id)
-                .then((result) => {
-                    res.render('index', {username: result.name, groups: result.followed_groups})
-                })
-                .catch((err) => {
-                    console.log(err)
-                })
-            }
-            catch(error){
-                res.json({status: error, error: "bad"})
-            }
+        catch(error){
+            res.json({status: error, error: "bad"})
         }
-        
-        
-    // }
-    
-    // const groups = []
-    // res.sendFile('./public/views/index.html', {root: __dirname });
-    // res.render('index', {username: 'panda', groups});
+    }
+
 })
 
-app.post('/update', (req, res) => {
+
+
+
+app.post('/chat', (req,res)=>{
+    const user_jwt = jwt.verify(req.cookies.token, JWT_SECRET)
+    pusher.trigger("channel", "message", {
+        message: req.body.message,
+        user_id: user_jwt._id
+      });
+      res.redirect('/')
+})
+app.get('/test',  (req, res)=>{
+    res.setHeader("Content-Type", "application/json");
+    res.statusCode  =  200;
+    res.json({message: "its working"})
+})
+app.post('/join-group', async (req, res) => {
+    const user = jwt.verify(req.cookies.token, JWT_SECRET)
+    console.log(user.id)
     console.log(req.body.groupname);
-    Group.findOneAndUpdate({_id: "6074eca7e390174af85d2c34"}, {
+    const group = await Group.findOne({"name":req.body.groupname}).lean()
+    console.log(group)
+    User.findOneAndUpdate({_id: user.id}, {
         $push: {
-            list: req.body.groupname
+            groups_id: group._id,
+            groups_name: group.name
         }
     }, {new:true}).then((result) => {
         res.redirect('/');
@@ -110,10 +181,52 @@ app.post('/update', (req, res) => {
         console.log(err);
     })
 })
-app.get('/addgroup', (req, res) => {
-    res.render('addgroup');
+app.post('/create-group', (req, res) => {
+    const user = jwt.verify(req.cookies.token, JWT_SECRET)
+    console.log(user.id)
+    console.log(req.body.groupname);
+    var id = ''
+    const group = new Group({
+        name: req.body.groupname,
+        member_id: [user.id]
+        });
+        //hwo to chain calls
+    group.save()
+    .then((result) => {
+        // res.send(result)
+        // res.status(200)
+        User.findOneAndUpdate({_id: user.id}, {
+            $push: {
+                groups_id: result._id,
+                groups_name: result.name
+            }
+        }, {new:true}).then((result) => {
+            res.status(200)
+            res.redirect('/');
+        }).catch((err) => {
+            console.log(err);
+        })
+        
+    })
+    .catch((err) => {
+        if(err.code ===11000){
+            res.render('usersignup', {duplicate: "Username is already in use"})
+            res.end()
+            
+        }
+        else{
+            throw err
+        }
+    })
+    
 })
+// app.get('/addgroup', (req, res) => {
+//     res.render('addgroup');
+// })
 app.get('/register', (req, res) => {
+    res.render('usersignup', {duplicate: ""});
+})
+app.post('/register', (req, res) => {
     res.render('usersignup', {duplicate: ""});
 })
 app.post('/signup-user', (req,res)=> {
