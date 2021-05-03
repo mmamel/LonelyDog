@@ -8,8 +8,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 var cookieParser = require('cookie-parser');
 const Pusher = require("pusher");
-const http = require("http").createServer(express)
-const io = require('socket.io')(http)
+
+const app = express();
+
+const server = require("http").createServer(app)
+const io = require('socket.io')(server)
 const cors = require("cors")
 
 const JWT_SECRET = 'ASD893ADF903#@%@ASDFJdlsjel'
@@ -20,8 +23,6 @@ const bodyParser = require('body-parser');
 //admin passwrod
 //E1uEV9a0VXHRDDZo
 
-//express app
-const app = express();
 app.use(bodyParser.json());
 //register view engine
 app.set('view engine', 'ejs');
@@ -29,7 +30,7 @@ app.set('views', 'public/views');
 
 const dbURI = 'mongodb+srv://dev:E1uEV9a0VXHRDDZo@lonelydog.ibylg.mongodb.net/dog?retryWrites=true&w=majority';
 mongoose.connect(dbURI, {useNewUrlParser:true, useUnifiedTopology:true})
-    .then((result) => app.listen(3000))
+    .then((result) => server.listen(3000))
     .catch((err) => console.log(err));
 //listen for requests
 
@@ -59,16 +60,21 @@ const pusher = new Pusher({
 // });
 
 io.on("connection", (socket) => {
-    socket.on("group_id", (gameId) => {});
-    socket.on("message", (message)=>{});
+    // socket.on("group_id", (gameId) => {});
+    // socket.on("message", (message)=>{});
+    console.log("new connection")
+    socket.emit('message', 'Welcome');
+    socket.broadcast.emit('message', 'A user has joined the chat');
+    socket.on('disconnect', ()=>{
+        io.emit('message', 'A user has left the chat');
+    })
+
+    //listen for chat message
+    socket.on('chatMessage', (msg) => {
+        io.emit('message', msg)
+    })
 })
-http.listen(3100, async() =>{
-    try{
-        console.log("Listening on port :%s", http.address().port);
-    } catch(e) {
-        console.error(e);
-    }
-})
+
 app.get('/add-group', (req, res) => {
     const group = new Group({
         name: "magee wanka",
@@ -164,7 +170,7 @@ app.post('/chat', (req,res)=>{
 app.get('/test',  (req, res)=>{
     res.setHeader("Content-Type", "application/json");
     res.statusCode  =  200;
-    res.json({message: "its working"})
+    res.json({message: ["its working", "this tesst"]})
 })
 app.post('/join-group', async (req, res) => {
     const user = jwt.verify(req.cookies.token, JWT_SECRET)
