@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 var cookieParser = require('cookie-parser');
 const Pusher = require("pusher");
+const csurf = require('csurf');
 
 const app = express();
 
@@ -27,6 +28,12 @@ app.use(bodyParser.json());
 //register view engine
 app.set('view engine', 'ejs');
 app.set('views', 'public/views');
+
+//CSRF attack
+const csrfMiddleware = csurf({
+    cookie: true
+  });
+var parseForm = bodyParser.urlencoded({extended: false})
 
 const dbURI = 'mongodb+srv://dev:E1uEV9a0VXHRDDZo@lonelydog.ibylg.mongodb.net/dog?retryWrites=true&w=majority';
 mongoose.connect(dbURI, {useNewUrlParser:true, useUnifiedTopology:true})
@@ -60,7 +67,8 @@ db.once('open', ()=> {
 app.use(express.static(__dirname + '/public'));
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
-app.use(cors());
+// app.use(cors());
+// app.use(csrfMiddleware);
 mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
@@ -138,7 +146,7 @@ app.get('/clear', (req, res)=>{
 // })
 
 //dont know how slow this is using so many await functions
-app.get('/', async (req, res) => {
+app.get('/', csrfMiddleware, async (req, res) => {
     if(req.cookies.token == null){
         res.redirect('/login')
     }
@@ -154,7 +162,7 @@ app.get('/', async (req, res) => {
              
             // res.setHeader("Content-Type", "application/json");
             // res.statusCode  =  200;
-            res.render('index', {username: user.username, groups: group_names})
+            res.render('index', {username: user.username, groups: group_names, csrfToken: req.csrfToken()})
            
         }
         catch(error){
@@ -316,7 +324,7 @@ app.post('/login', async (req, res) => {
             username: user.username
         }, JWT_SECRET)
 
-        res.cookie('token', token)
+        res.cookie('token', token, {httpOnly:true, secure: true, sameSite: true})
         res.redirect('/')
     }
     else{
@@ -345,8 +353,11 @@ app.post('/change-password', (req, res) => {
 // app.get('/redirect-me', (req, res) => {
 
 //     res.redirect('/');
-
+ 
 // })
+app.post("/entry", parseForm, csrfMiddleware, (req,res)=>{
+    res.json({message: "you are under attack"})
+})
 //404 page
 app.use((req, res) => {
     // res.status(404).sendFile('./public/views/404.html', {root: __dirname});
