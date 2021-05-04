@@ -30,10 +30,32 @@ app.set('views', 'public/views');
 
 const dbURI = 'mongodb+srv://dev:E1uEV9a0VXHRDDZo@lonelydog.ibylg.mongodb.net/dog?retryWrites=true&w=majority';
 mongoose.connect(dbURI, {useNewUrlParser:true, useUnifiedTopology:true})
-    .then((result) => server.listen(3000))
-    .catch((err) => console.log(err));
 //listen for requests
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, "Connection Error: "));
+db.once('open', ()=> {
+    server.listen(3000)
+    const msgCollection = db.collection('messages');
+    const msgChangeStream = msgCollection.watch();
 
+    msgChangeStream.on('change', (change) => {
+        if(change.operationType === 'insert') {
+            const msg = change.fullDocument;
+            pusher.trigger(
+                'channel',
+                'message',
+                {
+                    user_name : msg.user_name,
+                    text : msg.text
+                }
+            );
+        }
+        else{
+            console.log("SOMETHING WENT WRIONG")
+        }
+    })
+    // const messageCollection = db.collection('')
+})
 
 app.use(express.static(__dirname + '/public'));
 app.use(express.urlencoded({extended: true}));
@@ -59,21 +81,9 @@ const pusher = new Pusher({
 //     next();
 // });
 
-io.on("connection", (socket) => {
-    // socket.on("group_id", (gameId) => {});
-    // socket.on("message", (message)=>{});
-    console.log("new connection")
-    socket.emit('message', 'Welcome');
-    socket.broadcast.emit('message', 'A user has joined the chat');
-    socket.on('disconnect', ()=>{
-        io.emit('message', 'A user has left the chat');
-    })
 
-    //listen for chat message
-    socket.on('chatMessage', (msg) => {
-        io.emit('message', msg)
-    })
-})
+
+
 
 app.get('/add-group', (req, res) => {
     const group = new Group({
@@ -138,12 +148,10 @@ app.get('/', async (req, res) => {
             var group_names = []
             const user = await User.findById(user_jwt.id).lean()
                 for (var i=0; i<user.groups_id.length;i++){
-                    console.log(user.groups_id[i])
                 var group = await Group.findById(user.groups_id[i]).lean()
                 group_names.push(group.name)
                 }
              
-            console.log(group_names)
             // res.setHeader("Content-Type", "application/json");
             // res.statusCode  =  200;
             res.render('index', {username: user.username, groups: group_names})
@@ -161,11 +169,26 @@ app.get('/', async (req, res) => {
 
 app.post('/chat', (req,res)=>{
     const user_jwt = jwt.verify(req.cookies.token, JWT_SECRET)
-    pusher.trigger("channel", "message", {
-        message: req.body.message,
-        user_id: user_jwt._id
-      });
-      res.redirect('/')
+    const message = new Message({
+        user_id : user_jwt.id,
+        user_name : user_jwt.username,
+        text : req.body.message,
+        group_id: "608dedf13f9dc74c389fb78f"
+    })
+    message.save()
+    // .then((result) => {
+    //     res.statusCode = 200;
+    //     res.end();
+    //     console.log(result)
+    // })
+    // .catch((err) => {
+    //     console.log(err);
+    // })
+    // pusher.trigger("channel", "message", {
+    //     message: req.body.message,
+    //     user_id: user_jwt._id
+    //   });
+    //   return res.json({message: req.b})
 })
 app.get('/test',  (req, res)=>{
     res.setHeader("Content-Type", "application/json");
