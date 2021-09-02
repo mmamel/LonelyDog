@@ -1,14 +1,31 @@
+<script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>
+
+<link rel="stylesheet" type="text/css" href="css/sign_in.css">
 <html lang="en">
 <div class="user-login content">
-    <div>User Login</div>
+  <div class="container" id="container">
+    <div class="form-container sign-in-container">
+      <form action="login" method="POST">
+        <h1>Sign in</h1>
+        <div class="social-container">
+          <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="social"><i class="fab fa-google-plus-g"></i></a>
+          <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+        <span>or use your account</span>
+        <div class="nonexist"> <%=nonexist%></div>
+        <input type="text" id="username" name="username" required placeholder='Username'/>
+        <input type="password" id="password" name="password" required placeholder='Password'/>
+        <a href="#">Forgot your password?</a>
+        <a href="/register">Create new account</a>
+        <button>Sign In</button>
+      </form>
+    </div>
     
-    <form action="login" method="POST">
-      <!-- <label for="username">Group name:</label> -->
-      <input type="text" id="username" name="username" required placeholder='Username'/>
-      <input type="text" id="password" name="password" required placeholder='Password'/>
-      <button>Submit</button>
-    </form>
   </div>
+</div>
 
-</body>
+<!-- </body> -->
 </html>
+
+

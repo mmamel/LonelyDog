@@ -1,5 +1,3 @@
-//http branch
-//new addition
 const express = require('express');
 const fs = require('fs');
 const { Agent } = require('http');
@@ -16,13 +14,15 @@ const server = require("http").createServer(app)
 const io = require('socket.io')(server)
 const cors = require("cors")
 
-const JWT_SECRET = 'ASD893ADF903#@%@ASDFJdlsjel'
+//hidden passwords
+const {JWT_SECRET} = require('./keys.js');
+const {dbURI} = require('./keys.js')
+
 const Group = require('./models/group.js');
 const User = require('./models/user.js');
 const Message = require('./models/message.js')
 const bodyParser = require('body-parser');
-//admin passwrod
-//E1uEV9a0VXHRDDZo
+
 
 app.use(bodyParser.json());
 //register view engine
@@ -35,7 +35,6 @@ const csrfMiddleware = csurf({
   });
 var parseForm = bodyParser.urlencoded({extended: false})
 
-const dbURI = 'mongodb+srv://dev:E1uEV9a0VXHRDDZo@lonelydog.ibylg.mongodb.net/dog?retryWrites=true&w=majority';
 mongoose.connect(dbURI, {useNewUrlParser:true, useUnifiedTopology:true})
 //listen for requests
 const db = mongoose.connection;
@@ -61,14 +60,12 @@ db.once('open', ()=> {
             console.log("SOMETHING WENT WRIONG")
         }
     })
-    // const messageCollection = db.collection('')
 })
 
 app.use(express.static(__dirname + '/public'));
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
-// app.use(cors());
-// app.use(csrfMiddleware);
+
 mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
@@ -81,23 +78,10 @@ const pusher = new Pusher({
     useTLS: true
   });
   
-// app.use((req, res, next) => {
-//     console.log('new request made');
-//     console.log('host: ', req.hostname);
-//     console.log('path: ', req.path);
-//     console.log('method: ', req.method);
-//     next();
-// });
-
-
-
-
-
 app.get('/add-group', (req, res) => {
     const group = new Group({
         name: "magee wanka",
         list: ["Call of Duty", "Desinty 2"]
-        
     });
     group.save()
     .then((result) => {
@@ -108,44 +92,11 @@ app.get('/add-group', (req, res) => {
     })
 });
 
-// app.get('/single-user', (req, res) => {
-//     Group.findById('6074d01bedb27e1f304167b2')
-//     .then((result) => {
-//         res.send(result);
-//     })
-//     .catch((err) => {
-//         console.log(err);
-//     })
-// })
 app.get('/clear', (req, res)=>{
     res.clearCookie('token')
     res.send("cleared")
 })
-// app.get('/', async (req, res) => {
-//         if(req.cookies.token == null){
-//             res.redirect('/login')
-//         }
-//         else{
-//             try{
-//                 const user = jwt.verify(req.cookies.token, JWT_SECRET)
-//                 console.log(user)
-//                 User.findById(user.id)
-//                 .then((result) => {
-                    
-//                     res.render('index', {username: result.username, groups: result.groups_name})
-//                 })
-//                 .catch((err) => {
-//                     console.log(err)
-//                 })
-//             }
-//             catch(error){
-//                 res.json({status: error, error: "bad"})
-//             }
-//         }
 
-// })
-
-//dont know how slow this is using so many await functions
 app.get('/', csrfMiddleware, async (req, res) => {
     if(req.cookies.token == null){
         res.redirect('/login')
@@ -159,21 +110,13 @@ app.get('/', csrfMiddleware, async (req, res) => {
                 var group = await Group.findById(user.groups_id[i]).lean()
                 group_names.push(group.name)
                 }
-             
-            // res.setHeader("Content-Type", "application/json");
-            // res.statusCode  =  200;
             res.render('index', {username: user.username, groups: group_names, csrfToken: req.csrfToken()})
-           
         }
         catch(error){
             res.json({status: error, error: "bad"})
         }
     }
-
 })
-
-
-
 
 app.post('/chat', (req,res)=>{
     const user_jwt = jwt.verify(req.cookies.token, JWT_SECRET)
@@ -184,25 +127,8 @@ app.post('/chat', (req,res)=>{
         group_id: "608dedf13f9dc74c389fb78f"
     })
     message.save()
-    // .then((result) => {
-    //     res.statusCode = 200;
-    //     res.end();
-    //     console.log(result)
-    // })
-    // .catch((err) => {
-    //     console.log(err);
-    // })
-    // pusher.trigger("channel", "message", {
-    //     message: req.body.message,
-    //     user_id: user_jwt._id
-    //   });
-    //   return res.json({message: req.b})
 })
-app.get('/test',  (req, res)=>{
-    res.setHeader("Content-Type", "application/json");
-    res.statusCode  =  200;
-    res.json({message: ["its working", "this tesst"]})
-})
+
 app.post('/join-group', async (req, res) => {
     const user = jwt.verify(req.cookies.token, JWT_SECRET)
     console.log(user.id)
@@ -220,6 +146,7 @@ app.post('/join-group', async (req, res) => {
         console.log(err);
     })
 })
+
 app.post('/create-group', (req, res) => {
     const user = jwt.verify(req.cookies.token, JWT_SECRET)
     console.log(user.id)
@@ -232,8 +159,6 @@ app.post('/create-group', (req, res) => {
         //hwo to chain calls
     group.save()
     .then((result) => {
-        // res.send(result)
-        // res.status(200)
         User.findOneAndUpdate({_id: user.id}, {
             $push: {
                 groups_id: result._id,
@@ -245,29 +170,26 @@ app.post('/create-group', (req, res) => {
         }).catch((err) => {
             console.log(err);
         })
-        
     })
     .catch((err) => {
         if(err.code ===11000){
             res.render('usersignup', {duplicate: "Username is already in use"})
             res.end()
-            
         }
         else{
             throw err
         }
     })
-    
 })
-// app.get('/addgroup', (req, res) => {
-//     res.render('addgroup');
-// })
+
 app.get('/register', (req, res) => {
     res.render('usersignup', {duplicate: ""});
 })
+
 app.post('/register', (req, res) => {
     res.render('usersignup', {duplicate: ""});
 })
+
 app.post('/signup-user', (req,res)=> {
     const {username, password} = req.body;
     // const hash = hashPassword(password)
@@ -281,67 +203,44 @@ app.post('/signup-user', (req,res)=> {
             });
         user.save()
         .then((result) => {
-            // res.send(result)
             res.status(200)
             res.redirect('/')
             console.log("I am here")
-            
         })
         .catch((err) => {
             if(err.code ===11000){
                 res.render('usersignup', {duplicate: "Username is already in use"})
                 res.end()
-                
             }
             else{
                 throw err
             }
         })
     });
-    // res.redirect('/')
 })
+
 app.get('/login', (req, res) => {
-    res.render('userlogin');
+    res.render('userlogin', {nonexist: ""});
 })
 
 app.post('/login', async (req, res) => {
     const {username, password} = req.body;
     console.log(username, password);
-
-
-
     const user = await User.findOne({ username }).lean()
-    
-    
     if(!user){
-        return res.json({status: 'error', error: 'Invalid username/password'})
+        return res.render('userlogin', {nonexist: "Username or Password does not exist"});
     }
-    
     if(await bcrypt.compare(password, user.password)){
-
         const token = jwt.sign({
             id: user._id, 
             username: user.username
         }, JWT_SECRET)
-
         res.cookie('token', token, {httpOnly:true, secure: true, sameSite: true})
         res.redirect('/')
     }
     else{
         return res.json({status: 'error', error: 'Invalid username/password'})
-
     }
-    
-    // (async () => {
-    //     const hash = await hashPassword(password);
-    //     // $2b$10$5ysgXZUJi7MkJWhEhFcZTObGe18G1G.0rnXkewEtXq6ebVx1qpjYW
-    //     console.log(hash)
-    //     // TODO: store hash in a database
-    // })();
-
-    
-
-    // res.redirect('/')
 })
 
 app.post('/change-password', (req, res) => {
@@ -349,21 +248,14 @@ app.post('/change-password', (req, res) => {
     const user = jwt.verify(token, JWT_SECRET)
 })
 
-//for redirects use res.redirect
-// app.get('/redirect-me', (req, res) => {
-
-//     res.redirect('/');
- 
-// })
 app.post("/entry", parseForm, csrfMiddleware, (req,res)=>{
     res.json({message: "you are under attack"})
 })
+
 //404 page
 app.use((req, res) => {
-    // res.status(404).sendFile('./public/views/404.html', {root: __dirname});
     res.status(404).render('404')
 })
-
 
 const hashPassword = async (password, saltRounds = 10) => {
     try {
