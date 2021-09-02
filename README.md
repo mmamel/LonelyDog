@@ -20,3 +20,10 @@ https://user-images.githubusercontent.com/43307993/131765444-9e1fa3fa-217f-48fa-
 
 The user's credentials and active session are authenticated with a JWT secret and stored with cookies.
 This ensures all the users actions are in fact from them and minimizes that chances of a XSS or CSRF attack.
+
+
+https://user-images.githubusercontent.com/43307993/131765645-3973c681-7a94-4af8-a5e6-4978e23661ba.mp4
+
+
+Here we can see opening a new tab retains the users login and once the cookies are cleared does the user
+have to re-login
